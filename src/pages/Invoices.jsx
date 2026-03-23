@@ -1,10 +1,12 @@
 // ============================================================
 // FILE: src/pages/Invoices.jsx
 // FinlyticsX — Invoice Tracker (Freelancer Page)
-// FIXED: useCurrency wired — all amounts respect navbar FX switcher
+// FIXED: context menus no longer clipped — overflow: visible on cards/cols
+// ADDED: animated delete toast with undo support
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import {
@@ -23,11 +25,11 @@ import {
   MdNotes,
   MdSort,
   MdMoreVert,
-  MdTrendingUp,
   MdPendingActions,
   MdMoneyOff,
   MdDone,
   MdKeyboardArrowDown,
+  MdUndo,
 } from 'react-icons/md';
 import useCurrency from '../hooks/useCurrency';
 import './Invoices.css';
@@ -71,6 +73,7 @@ const STATUS_CONFIG = {
 
 const PIPELINE_STAGES = ['draft', 'sent', 'overdue', 'paid'];
 const STORAGE_KEY = 'finlyticsx_invoices';
+const TOAST_DURATION = 3200; // ms before toast auto-dismisses
 
 function loadInvoices() {
   try {
@@ -89,6 +92,60 @@ function genInvoiceNumber(invoices) {
     return n > m ? n : m;
   }, 0);
   return `INV-${String(max + 1).padStart(4, '0')}`;
+}
+
+// ── Delete Toast ───────────────────────────────────────────
+// Renders into document.body via portal so it's never clipped
+function DeleteToast({ toast, onUndo, onDismiss }) {
+  useEffect(() => {
+    const t = setTimeout(() => onDismiss(toast.id), TOAST_DURATION);
+    return () => clearTimeout(t);
+  }, [toast.id, onDismiss]);
+
+  return createPortal(
+    <div className="inv-toast-portal">
+      <AnimatePresence>
+        <motion.div
+          key={toast.id}
+          className="inv-toast"
+          initial={{ opacity: 0, y: 24, scale: 0.92 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.95 }}
+          transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {/* Countdown progress bar */}
+          <div className="inv-toast__progress" key={toast.id + '-bar'} />
+
+          {/* Icon */}
+          <div className="inv-toast__icon-wrap">
+            <MdDelete size={15} style={{ color: ROSE }} />
+          </div>
+
+          {/* Text */}
+          <div className="inv-toast__body">
+            <span className="inv-toast__title">Invoice deleted</span>
+            <span className="inv-toast__sub">
+              {toast.number} · {toast.client}
+            </span>
+          </div>
+
+          {/* Undo */}
+          <button className="inv-toast__undo" onClick={() => onUndo(toast.id)}>
+            <MdUndo size={12} /> Undo
+          </button>
+
+          {/* Close */}
+          <button
+            className="inv-toast__close"
+            onClick={() => onDismiss(toast.id)}
+          >
+            <MdClose size={13} />
+          </button>
+        </motion.div>
+      </AnimatePresence>
+    </div>,
+    document.body,
+  );
 }
 
 // ── Status Badge ───────────────────────────────────────────
@@ -300,6 +357,8 @@ function PipelineCard({ invoice, index, onEdit, onDelete, onStatusChange }) {
 
       <div className="inv-pipeline-card__header">
         <span className="inv-pipeline-card__number">{invoice.number}</span>
+
+        {/* FIXED: menu wrap is position:relative z-index:100, so menu always shows above sibling cards */}
         <div className="inv-pipeline-card__menu-wrap" ref={menuRef}>
           <button
             className="inv-pipeline-card__menu-btn"
@@ -307,6 +366,7 @@ function PipelineCard({ invoice, index, onEdit, onDelete, onStatusChange }) {
           >
             <MdMoreVert size={14} />
           </button>
+
           <AnimatePresence>
             {menuOpen && (
               <motion.div
@@ -325,6 +385,7 @@ function PipelineCard({ invoice, index, onEdit, onDelete, onStatusChange }) {
                 >
                   <MdEdit size={12} /> Edit
                 </button>
+
                 {nextStatuses.map((s) => {
                   const sc = STATUS_CONFIG[s];
                   return (
@@ -341,11 +402,13 @@ function PipelineCard({ invoice, index, onEdit, onDelete, onStatusChange }) {
                     </button>
                   );
                 })}
+
                 <div className="inv-context-divider" />
+
                 <button
                   className="inv-context-item inv-context-item--danger"
                   onClick={() => {
-                    onDelete(invoice.id);
+                    onDelete(invoice);
                     setMenuOpen(false);
                   }}
                 >
@@ -510,6 +573,7 @@ function ListRow({ invoice, index, onEdit, onDelete, onStatusChange }) {
               >
                 <MdEdit size={12} /> Edit
               </button>
+
               {PIPELINE_STAGES.filter((s) => s !== invoice.status).map((s) => {
                 const sc = STATUS_CONFIG[s];
                 return (
@@ -526,11 +590,13 @@ function ListRow({ invoice, index, onEdit, onDelete, onStatusChange }) {
                   </button>
                 );
               })}
+
               <div className="inv-context-divider" />
+
               <button
                 className="inv-context-item inv-context-item--danger"
                 onClick={() => {
-                  onDelete(invoice.id);
+                  onDelete(invoice);
                   setMenuOpen(false);
                 }}
               >
@@ -868,6 +934,10 @@ export default function Invoices() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('date-desc');
   const [sortOpen, setSortOpen] = useState(false);
+
+  // Toast state: { id, invoiceId, number, client, snapshot: Invoice[] }
+  const [toast, setToast] = useState(null);
+
   const sortRef = useRef(null);
 
   useEffect(() => {
@@ -879,6 +949,7 @@ export default function Invoices() {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
+  // Auto-mark overdue on mount
   useEffect(() => {
     setInvoices((prev) => {
       const updated = prev.map((inv) =>
@@ -905,7 +976,42 @@ export default function Invoices() {
     );
   };
 
-  const handleDelete = (id) => persist(invoices.filter((i) => i.id !== id));
+  // Delete: remove + show toast with snapshot for undo
+  const handleDelete = useCallback(
+    (invoice) => {
+      const snapshot = invoices; // capture current list before removal
+      const next = invoices.filter((i) => i.id !== invoice.id);
+      persist(next);
+
+      // Replace any existing toast (one at a time)
+      setToast({
+        id: crypto.randomUUID(),
+        invoiceId: invoice.id,
+        number: invoice.number,
+        client: invoice.client,
+        snapshot,
+      });
+    },
+    [invoices, persist],
+  );
+
+  // Undo: restore the pre-delete snapshot
+  const handleUndo = useCallback(
+    (toastId) => {
+      if (toast?.id !== toastId) return;
+      persist(toast.snapshot);
+      setToast(null);
+    },
+    [toast, persist],
+  );
+
+  const handleDismissToast = useCallback(
+    (toastId) => {
+      if (toast?.id === toastId) setToast(null);
+    },
+    [toast],
+  );
+
   const handleStatusChange = (id, status) =>
     persist(invoices.map((i) => (i.id === id ? { ...i, status } : i)));
 
@@ -933,6 +1039,18 @@ export default function Invoices() {
       <div className="inv-scanlines" aria-hidden />
       <div className="inv-orb inv-orb--1" />
       <div className="inv-orb inv-orb--2" />
+
+      {/* Delete toast — rendered via portal into document.body */}
+      <AnimatePresence>
+        {toast && (
+          <DeleteToast
+            key={toast.id}
+            toast={toast}
+            onUndo={handleUndo}
+            onDismiss={handleDismissToast}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {(showModal || editInvoice) && (

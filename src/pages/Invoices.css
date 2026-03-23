@@ -101,6 +101,160 @@
 }
 
 /* ══════════════════════════════════════════════════════════
+   DELETE TOAST NOTIFICATION
+══════════════════════════════════════════════════════════ */
+.inv-toast-portal {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.inv-toast {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 14px;
+  background: #12121f;
+  border: 1px solid rgba(255, 68, 102, 0.3);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 68, 102, 0.1),
+    0 20px 60px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(255, 68, 102, 0.08);
+  white-space: nowrap;
+  min-width: 280px;
+  max-width: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+.inv-toast__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff4466, #ff6680);
+  border-radius: 0 0 12px 12px;
+  animation: invToastProgress 3.2s linear forwards;
+  transform-origin: left;
+}
+
+@keyframes invToastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.inv-toast__icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 68, 102, 0.12);
+  border: 1px solid rgba(255, 68, 102, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: invToastIconPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes invToastIconPop {
+  0% {
+    transform: scale(0.5) rotate(-15deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15) rotate(3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.inv-toast__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.inv-toast__title {
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--inv-text);
+  letter-spacing: 0.2px;
+  display: block;
+}
+
+.inv-toast__sub {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  color: var(--inv-muted);
+  letter-spacing: 0.3px;
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inv-toast__undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-family: var(--font-primary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 245, 255, 0.08);
+  color: var(--inv-cyan);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--fast) var(--spring);
+}
+
+.inv-toast__undo:hover {
+  background: rgba(0, 245, 255, 0.16);
+  border-color: rgba(0, 245, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 245, 255, 0.15);
+}
+
+.inv-toast__close {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--inv-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--fast);
+}
+
+.inv-toast__close:hover {
+  color: var(--inv-text);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ══════════════════════════════════════════════════════════
    HEADER
 ══════════════════════════════════════════════════════════ */
 .inv-header {
@@ -514,6 +668,7 @@
 
 /* ══════════════════════════════════════════════════════════
    PIPELINE VIEW
+   KEY FIX: overflow visible so context menus escape columns
 ══════════════════════════════════════════════════════════ */
 .inv-pipeline {
   display: grid;
@@ -528,6 +683,8 @@
   border-radius: var(--radius-lg);
   padding: 16px;
   min-height: 200px;
+  /* FIXED: was causing context menus to be clipped */
+  overflow: visible;
   transition: border-color 300ms;
 }
 .inv-pipeline-col:hover {
@@ -591,6 +748,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  /* FIXED: overflow must be visible so menus escape */
+  overflow: visible;
 }
 .inv-pipeline-col__empty {
   font-family: var(--font-primary);
@@ -608,7 +767,8 @@
   border-radius: var(--radius-md);
   padding: 14px;
   position: relative;
-  overflow: hidden;
+  /* FIXED: overflow visible so context menu shows fully */
+  overflow: visible;
   transition:
     border-color 200ms,
     box-shadow 200ms,
@@ -648,8 +808,11 @@
   letter-spacing: 1.5px;
   color: var(--inv-muted);
 }
+
+/* FIXED: menu wrap needs position relative + high z-index */
 .inv-pipeline-card__menu-wrap {
   position: relative;
+  z-index: 100;
 }
 .inv-pipeline-card__menu-btn {
   width: 24px;
@@ -761,6 +924,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  /* FIXED: high z-index so it escapes card stacking contexts */
   z-index: 9999;
   overflow: hidden;
   padding: 4px;
@@ -1317,6 +1481,16 @@
   }
   .inv-modal__row {
     grid-template-columns: 1fr;
+  }
+  .inv-toast-portal {
+    bottom: 20px;
+    left: 16px;
+    right: 16px;
+    transform: none;
+  }
+  .inv-toast {
+    min-width: unset;
+    width: 100%;
   }
 }
 @media (max-width: 480px) {

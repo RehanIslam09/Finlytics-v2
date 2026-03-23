@@ -32,6 +32,7 @@ import {
   MdCalendarToday,
   MdNotes,
   MdClose,
+  MdWarning,
 } from 'react-icons/md';
 import { useFinance } from '../context/FinanceContext';
 import './AddTransaction.css';
@@ -351,6 +352,10 @@ export default function AddTransaction() {
   const [success, setSuccess] = useState(null); // { type, amount, title }
   const [charCount, setCharCount] = useState(0);
 
+  // ── Validation warning state ───────────────────────────
+  const [submitError, setSubmitError] = useState(null);
+  const [isShaking, setIsShaking] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -386,6 +391,28 @@ export default function AddTransaction() {
   useEffect(() => {
     setCharCount((watchedNotes || '').length);
   }, [watchedNotes]);
+
+  // Auto-dismiss the toast when user starts fixing the missing fields
+  useEffect(() => {
+    if (submitError) setSubmitError(null);
+  }, [watchedAmount, watchedTitle, watchedCategory]);
+
+  // Trigger the submit button shake animation
+  const triggerShake = () => {
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 420);
+  };
+
+  // Called when yup validation fails on submit
+  const onValidationError = (errors) => {
+    const missing = [];
+    if (errors.amount) missing.push('Amount');
+    if (errors.title) missing.push('Title');
+    if (errors.category) missing.push('Category');
+    if (errors.date) missing.push('Date');
+    setSubmitError(missing.join(' · '));
+    triggerShake();
+  };
 
   const onSubmit = async (data) => {
     const transaction = {
@@ -426,7 +453,11 @@ export default function AddTransaction() {
         {success && <SuccessOverlay {...success} />}
       </AnimatePresence>
 
-      <form className="adx-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form
+        className="adx-form"
+        onSubmit={handleSubmit(onSubmit, onValidationError)}
+        noValidate
+      >
         {/* ── Back link ─────────────────────────────── */}
         <motion.div
           className="adx-back"
@@ -438,6 +469,35 @@ export default function AddTransaction() {
             <MdArrowBack size={14} /> Back to ledger
           </Link>
         </motion.div>
+
+        {/* ── Validation toast ──────────────────────── */}
+        <AnimatePresence>
+          {submitError && (
+            <motion.div
+              className="adx-validation-toast"
+              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="adx-toast-icon">
+                <MdWarning size={14} style={{ color: '#ff4444' }} />
+              </div>
+              <div className="adx-toast-body">
+                <p className="adx-toast-title">MISSING REQUIRED FIELDS</p>
+                <p className="adx-toast-msg">Please fill in: {submitError}</p>
+              </div>
+              <button
+                type="button"
+                className="adx-toast-dismiss"
+                onClick={() => setSubmitError(null)}
+                aria-label="Dismiss warning"
+              >
+                <MdClose size={12} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ══════════════════════════════════════════
             HERO ZONE — type toggle + amount
@@ -591,7 +651,9 @@ export default function AddTransaction() {
                 name="category"
                 control={control}
                 render={({ field }) => (
-                  <div className="adx-category-grid">
+                  <div
+                    className={`adx-category-grid ${errors.category ? 'adx-category-grid--error' : ''}`}
+                  >
                     <AnimatePresence mode="popLayout">
                       {visibleCats.map((cat, i) => {
                         const Icon = cat.icon;
@@ -815,7 +877,7 @@ export default function AddTransaction() {
 
           <button
             type="submit"
-            className="adx-btn-submit"
+            className={`adx-btn-submit ${isShaking ? 'adx-btn-shake' : ''}`}
             style={{
               '--submit-color': accentColor,
               '--submit-glow': accentGlow,

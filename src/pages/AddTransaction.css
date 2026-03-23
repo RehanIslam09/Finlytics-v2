@@ -67,6 +67,103 @@
 }
 
 /* ══════════════════════════════════════════════════════════
+   VALIDATION TOAST
+══════════════════════════════════════════════════════════ */
+.adx-validation-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: rgba(28, 8, 8, 0.97);
+  border: 1px solid rgba(255, 68, 68, 0.4);
+  border-radius: 10px;
+  box-shadow:
+    0 0 24px rgba(255, 42, 42, 0.12),
+    inset 0 0 20px rgba(255, 42, 42, 0.03);
+}
+
+.adx-toast-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.adx-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.adx-toast-title {
+  font-family: var(--font-primary);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #ff6666;
+  margin: 0 0 4px;
+}
+
+.adx-toast-msg {
+  font-family: var(--font-primary);
+  font-size: 10px;
+  color: rgba(255, 110, 110, 0.7);
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
+.adx-toast-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 68, 68, 0.4);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+  flex-shrink: 0;
+}
+
+.adx-toast-dismiss:hover {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.1);
+}
+
+/* ── Shake animation ─────────────────────────────────────── */
+@keyframes adxShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.adx-btn-shake {
+  animation: adxShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
    HERO ZONE
 ══════════════════════════════════════════════════════════ */
 .adx-hero {
@@ -429,6 +526,13 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+  border-radius: var(--radius-sm);
+  transition: box-shadow 160ms ease;
+}
+
+.adx-category-grid--error {
+  box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.25);
+  border-radius: var(--radius-sm);
 }
 
 .adx-cat-btn {
@@ -1126,6 +1230,10 @@
     min-width: unset;
     width: 90vw;
   }
+
+  .adx-validation-toast {
+    flex-wrap: nowrap;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1154,5 +1262,8 @@
   .adx-btn-submit::before,
   .adx-type-btn::before {
     display: none;
+  }
+  .adx-btn-shake {
+    animation: none !important;
   }
 }

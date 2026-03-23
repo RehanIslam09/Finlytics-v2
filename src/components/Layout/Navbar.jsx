@@ -1,12 +1,14 @@
 /* ============================================================
    FILE: src/components/Layout/Navbar.jsx
-   UPDATED: Goals + Invoices added to nav
+   UPDATED: Avatar wired to /account + Clerk user initials/photo
    ============================================================ */
 
 import { useState, useRef, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { FiBell, FiMenu, FiX, FiGlobe, FiChevronDown } from 'react-icons/fi';
+import { MdAccountCircle } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '@clerk/clerk-react';
 import useCurrency from '../../hooks/useCurrency';
 import './Navbar.css';
 
@@ -14,6 +16,8 @@ function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [fxOpen, setFxOpen] = useState(false);
   const fxRef = useRef(null);
+  const navigate = useNavigate();
+  const { user } = useUser();
 
   const { setCurrency, selectedCurrency, supportedCurrencies } = useCurrency();
 
@@ -33,6 +37,21 @@ function Navbar() {
     { to: '/goals', label: 'Goals' },
     { to: '/invoices', label: 'Invoices' },
   ];
+
+  // Derive avatar display from Clerk user
+  const avatarInitials = user
+    ? (
+        user.fullName ||
+        user.username ||
+        user.primaryEmailAddress?.emailAddress ||
+        'FX'
+      )
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'FX';
 
   return (
     <header className="navbar">
@@ -63,6 +82,7 @@ function Navbar() {
             <FiBell />
           </button>
 
+          {/* Currency switcher */}
           <div className="fx-wrap" ref={fxRef}>
             <button
               className={`icon-btn fx-btn ${fxOpen ? 'active' : ''}`}
@@ -116,7 +136,25 @@ function Navbar() {
           <NavLink to="/transactions/new" className="cta-btn">
             + ADD
           </NavLink>
-          <div className="avatar">FX</div>
+
+          {/* Avatar — clicks through to /account */}
+          <button
+            className="avatar"
+            onClick={() => navigate('/account')}
+            title="Account settings"
+          >
+            {user?.imageUrl ? (
+              <img
+                src={user.imageUrl}
+                alt={user.fullName || 'Avatar'}
+                className="avatar__photo"
+              />
+            ) : (
+              avatarInitials
+            )}
+            <span className="avatar__dot" />
+          </button>
+
           <button
             className="icon-btn mobile-menu-btn"
             onClick={() => setIsOpen(!isOpen)}
@@ -162,6 +200,20 @@ function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               + ADD TRANSACTION
+            </NavLink>
+            {/* Account link in mobile menu */}
+            <NavLink
+              to="/account"
+              className="mobile-link"
+              onClick={() => setIsOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginTop: 4,
+              }}
+            >
+              <MdAccountCircle size={14} /> Account Settings
             </NavLink>
           </motion.div>
         )}
