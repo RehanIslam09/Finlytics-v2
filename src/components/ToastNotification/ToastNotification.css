@@ -1,0 +1,140 @@
+/* ============================================================
+   FILE: src/components/ToastNotification/ToastNotification.css
+   FinlyticsX — Centered overlay notification
+   ============================================================ */
+
+/* Invisible backdrop — catches clicks to dismiss */
+.tn-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  pointer-events: auto;
+}
+
+/* Card — centered on screen */
+.tn-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  background: #0e0e18;
+  border: 1px solid color-mix(in srgb, var(--tn-color) 30%, transparent);
+  border-radius: 14px;
+  padding: 18px 48px 18px 20px;
+
+  min-width: 280px;
+  max-width: 420px;
+
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tn-color) 10%, transparent),
+    0 24px 60px rgba(0, 0, 0, 0.7),
+    0 0 40px var(--tn-glow);
+
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+/* Corner bracket top-left */
+.tn-card::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--tn-color);
+  border-left: 1px solid var(--tn-color);
+  opacity: 0.5;
+  border-radius: 2px 0 0 0;
+}
+
+/* Corner bracket bottom-right */
+.tn-card::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  border-bottom: 1px solid var(--tn-color);
+  border-right: 1px solid var(--tn-color);
+  opacity: 0.5;
+  border-radius: 0 0 2px 0;
+}
+
+/* Scan line that sweeps across */
+.tn-scan {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  opacity: 0.08;
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Icon */
+.tn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--tn-color) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tn-color) 25%, transparent);
+  flex-shrink: 0;
+}
+
+/* Message */
+.tn-message {
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 600;
+  color: #e8e8f0;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Close button */
+.tn-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(232, 232, 240, 0.4);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tn-close:hover {
+  color: #e8e8f0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Progress bar — shrinks from full width to zero */
+.tn-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  transform-origin: left;
+  border-radius: 0 0 14px 14px;
+  opacity: 0.7;
+}

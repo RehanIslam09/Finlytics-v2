@@ -1,0 +1,12 @@
+/* ============================================
+   FILE: src/components/Charts/SpendingDonut.css
+   ============================================ */
+
+.donut-card {
+  background: var(--color-bg-secondary);
+  padding: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  box-shadow: var(--glow-accent);
+  text-align: center;
+}

@@ -1,0 +1,112 @@
+/* ============================================
+   FILE: src/components/TransactionCard/TransactionCard.css
+   ============================================ */
+
+.tx-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 2px solid transparent;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+  gap: 12px;
+}
+
+.tx-card:last-child {
+  border-bottom: none;
+}
+
+.tx-card:hover {
+  border-left-color: #00f5ff;
+  background: rgba(0, 245, 255, 0.03);
+}
+
+.tx-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tx-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tx-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tx-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tx-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #e8e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.rec-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: #ffaa00;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.tx-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tx-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: rgba(232, 232, 240, 0.35);
+  white-space: nowrap;
+}
+
+.tx-category-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.tx-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tx-amount.income {
+  color: #00ff88;
+}
+.tx-amount.expense {
+  color: #ff4444;
+}

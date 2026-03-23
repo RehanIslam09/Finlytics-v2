@@ -1,0 +1,10 @@
+/* ============================================
+   FILE: src/components/Charts/MonthlyTrend.css
+   ============================================ */
+
+.trend-card {
+  background: var(--color-bg-secondary);
+  padding: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+}
