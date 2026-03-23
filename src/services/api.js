@@ -117,6 +117,7 @@ const EXCHANGE_BASE_URL = 'https://api.exchangerate-api.com/v4/latest';
 const FALLBACK_RATES = {
   INR: 1,
   USD: 0.012,
+  PHP: 0.69,
   EUR: 0.011,
   GBP: 0.0095,
   JPY: 1.78,
