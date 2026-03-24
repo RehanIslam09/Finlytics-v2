@@ -1569,9 +1569,7 @@ USING (clerk_user_id = (auth.jwt() ->> 'sub'));
 ```js
 const db = await getSupabase();
 
-const { data } = await db
-  .from('transactions')
-  .select('*');
+const { data } = await db.from('transactions').select('*');
 ```
 
 ---
@@ -1580,9 +1578,9 @@ const { data } = await db
 
 Even if:
 
-* User edits frontend code
-* Requests are intercepted
-* IDs are guessed
+- User edits frontend code
+- Requests are intercepted
+- IDs are guessed
 
 👉 **Database denies access automatically**
 
@@ -1626,15 +1624,15 @@ React State → localStorage → Supabase (source of truth)
 
 # 🚀 KEY FEATURES
 
-* Full transaction tracking
-* Budget system with velocity
-* Analytics dashboard
-* Goals system
-* Invoice tracker
-* Multi-currency support
-* News integration
-* Optimistic UI updates
-* RLS-secured database
+- Full transaction tracking
+- Budget system with velocity
+- Analytics dashboard
+- Goals system
+- Invoice tracker
+- Multi-currency support
+- News integration
+- Optimistic UI updates
+- RLS-secured database
 
 ---
 
@@ -1652,11 +1650,11 @@ VITE_SUPABASE_ANON_KEY=
 
 | Feature                    | Status |
 | -------------------------- | ------ |
-| JWT Auth                   | ✅      |
-| RLS                        | ✅      |
-| Data Isolation             | ✅      |
-| Zero Trust Model           | ✅      |
-| Frontend Bypass Protection | ✅      |
+| JWT Auth                   | ✅     |
+| RLS                        | ✅     |
+| Data Isolation             | ✅     |
+| Zero Trust Model           | ✅     |
+| Frontend Bypass Protection | ✅     |
 
 ---
 
@@ -1666,13 +1664,13 @@ VITE_SUPABASE_ANON_KEY=
 
 Frontend filtering:
 
-* ❌ Can be bypassed
+- ❌ Can be bypassed
 
 RLS:
 
-* ✅ Enforced at database level
-* ✅ Cannot be bypassed
-* ✅ Industry standard
+- ✅ Enforced at database level
+- ✅ Cannot be bypassed
+- ✅ Industry standard
 
 ---
 
@@ -1702,8 +1700,6 @@ FinlyticsX v2.1
 
 ---
 
-
-
 ---
 
 <div align="center">
@@ -1721,6 +1717,7 @@ FinlyticsX v2.1
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 ```
+
 ---
 
 **Acknowledgements**
@@ -1729,7 +1726,18 @@ FinlyticsX v2.1
 
 ---
 
-_MIT License — see LICENSE for details_
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🙌 Attribution (Optional but Appreciated)
+
+If you use this project in your own work, please provide visible credit:
+
+- Mention **"FinlyticsX by Rehan"**
+- Include a link to this repository
+
+This is not legally required under the MIT License, but is greatly appreciated.
 
 ```
 ► SESSION TERMINATED          ► DATA ENCRYPTED          ► SIGNING OFF
