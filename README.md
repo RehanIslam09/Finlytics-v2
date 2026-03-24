@@ -1413,6 +1413,297 @@ git push origin feature/your-feature-name
 ✅ formatCurrency() for all monetary display values (never hardcode ₹)
 ```
 
+<!-- ================================================================== -->
+
+<!--                    FINLYTICSX — CLASSIFIED README v2.1              -->
+
+<!-- ================================================================== -->
+
+# 🧠 FINLYTICSX — Financial Intelligence Platform
+
+```
+► SYSTEM STATUS: ONLINE
+► ENCRYPTION: ACTIVE
+► SESSION: SECURE
+► SECURITY LAYER: RLS ENFORCED (v2.1)
+```
+
+---
+
+# 🧾 EXECUTIVE BRIEF
+
+FinlyticsX is a **full-stack financial intelligence system** engineered for students and freelancers.
+
+Version **v2.1 introduces a critical upgrade**:
+
+> 🔐 **Database-enforced security using Supabase Row-Level Security (RLS) + Clerk JWT**
+
+Every user operates inside an **isolated data enclave** — enforced at the database level.
+
+---
+
+# ⚙️ CORE STACK
+
+| Layer      | Tech                      |
+| ---------- | ------------------------- |
+| Frontend   | React 19 + Vite           |
+| Auth       | Clerk                     |
+| Database   | Supabase (PostgreSQL)     |
+| Security   | RLS + JWT                 |
+| State      | Context API + local cache |
+| Animations | GSAP + Framer Motion      |
+
+---
+
+# 🏗 SYSTEM ARCHITECTURE
+
+```
+USER
+ │
+ ▼
+CLERK AUTH (JWT issued)
+ │
+ ▼
+REACT APP (FinanceContext)
+ │
+ ▼
+SUPABASE CLIENT (JWT attached)
+ │
+ ▼
+POSTGRESQL + RLS POLICIES
+```
+
+---
+
+# 🧬 DATABASE SCHEMA
+
+```sql
+-- RLS ENABLED — database-enforced isolation
+
+CREATE TABLE transactions (
+  id UUID PRIMARY KEY,
+  clerk_user_id TEXT NOT NULL,
+  title TEXT,
+  amount NUMERIC,
+  category TEXT,
+  type TEXT,
+  date TIMESTAMPTZ
+);
+```
+
+---
+
+# 🔐 ROW-LEVEL SECURITY (v2.1 UPGRADE)
+
+## SECURITY MODEL SHIFT
+
+```
+BEFORE (v2)
+  Frontend filtering
+  .eq('clerk_user_id', userId)
+
+AFTER (v2.1)
+  Database enforcement
+  RLS + JWT
+```
+
+---
+
+## 🔄 REQUEST FLOW
+
+```
+User logs in
+   │
+   ▼
+Clerk issues JWT
+   │
+   ▼
+JWT contains:
+  sub = user_abc123
+   │
+   ▼
+Supabase receives request
+   │
+   ▼
+RLS Policy executes:
+  clerk_user_id = auth.jwt() ->> 'sub'
+   │
+   ├── TRUE  → allow
+   └── FALSE → deny
+```
+
+---
+
+## 🧠 POLICY
+
+```sql
+CREATE POLICY "users own transactions"
+ON transactions
+FOR ALL
+USING (clerk_user_id = (auth.jwt() ->> 'sub'));
+```
+
+---
+
+## ⚡ WHAT CHANGED
+
+| Layer       | Before           | After                  |
+| ----------- | ---------------- | ---------------------- |
+| Security    | Frontend filter  | Database enforced      |
+| Trust model | Client trusted   | Zero trust             |
+| Risk        | Possible bypass  | Impossible without JWT |
+| Queries     | Manual filtering | Automatic via RLS      |
+
+---
+
+## ❌ REMOVED PATTERN
+
+```js
+.eq('clerk_user_id', userId)
+```
+
+---
+
+## ✅ CURRENT QUERY
+
+```js
+const db = await getSupabase();
+
+const { data } = await db
+  .from('transactions')
+  .select('*');
+```
+
+---
+
+## 🛡 SECURITY GUARANTEE
+
+Even if:
+
+* User edits frontend code
+* Requests are intercepted
+* IDs are guessed
+
+👉 **Database denies access automatically**
+
+---
+
+# 🔑 AUTHENTICATION FLOW
+
+```
+User → Clerk → JWT → Supabase → RLS → Data
+```
+
+---
+
+# 🧠 FINANCE CONTEXT FLOW
+
+```
+UI ACTION
+  │
+  ▼
+Optimistic Update (instant)
+  │
+  ▼
+Supabase request (JWT attached)
+  │
+  ▼
+RLS validates user
+  │
+  ▼
+Database writes
+```
+
+---
+
+# ⚡ DATA FLOW
+
+```
+React State → localStorage → Supabase (source of truth)
+```
+
+---
+
+# 🚀 KEY FEATURES
+
+* Full transaction tracking
+* Budget system with velocity
+* Analytics dashboard
+* Goals system
+* Invoice tracker
+* Multi-currency support
+* News integration
+* Optimistic UI updates
+* RLS-secured database
+
+---
+
+# 📦 ENV VARIABLES
+
+```env
+VITE_CLERK_PUBLISHABLE_KEY=
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+---
+
+# 🧪 SECURITY SUMMARY
+
+| Feature                    | Status |
+| -------------------------- | ------ |
+| JWT Auth                   | ✅      |
+| RLS                        | ✅      |
+| Data Isolation             | ✅      |
+| Zero Trust Model           | ✅      |
+| Frontend Bypass Protection | ✅      |
+
+---
+
+# 🧠 KEY ENGINEERING DECISION
+
+### Why RLS over frontend filtering?
+
+Frontend filtering:
+
+* ❌ Can be bypassed
+
+RLS:
+
+* ✅ Enforced at database level
+* ✅ Cannot be bypassed
+* ✅ Industry standard
+
+---
+
+# 🧑‍💻 CONTRIBUTING
+
+```
+RULES:
+
+✅ Use authenticated Supabase client
+✅ NEVER use service role key
+✅ DO NOT add .eq('clerk_user_id')
+✅ RLS handles isolation
+```
+
+---
+
+# 🧾 FINAL NOTE
+
+```
+Every rupee tracked.
+Every request verified.
+Every user isolated.
+
+FinlyticsX v2.1
+→ Secure by design.
+```
+
+---
+
+
+
 ---
 
 <div align="center">
@@ -1430,7 +1721,6 @@ git push origin feature/your-feature-name
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 ```
-
 ---
 
 **Acknowledgements**
