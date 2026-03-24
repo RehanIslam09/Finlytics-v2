@@ -1,6 +1,6 @@
 /* ============================================
    FILE: src/context/FinanceContext.jsx
-   v2 — Supabase source of truth · Clerk user scoping · no seed data
+   v2 — RLS-secure · Clerk JWT · authenticated Supabase client
    ============================================ */
 
 import {
@@ -12,15 +12,12 @@ import {
 } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '../lib/supabase';
+import { useSupabaseClient } from '../lib/supabase';
 
 const FinanceContext = createContext();
 export const useFinance = () => useContext(FinanceContext);
 
-// ─── Cache helpers (localStorage) ─────────────────────────────────────────────
-// Lets the app feel instant on return visits — Supabase data arrives and
-// replaces the cache once the fetch resolves.
-
+// ─── Cache helpers ─────────────────────────────────────────
 const cacheGet = (key, fallback) => {
   try {
     const v = localStorage.getItem(key);
@@ -33,21 +30,17 @@ const cacheGet = (key, fallback) => {
 const cacheSet = (key, value) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage quota exceeded — silently ignore
-  }
+  } catch {}
 };
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
-
+// ─── Provider ──────────────────────────────────────────────
 export function FinanceProvider({ children }) {
   const { userId, isLoaded } = useAuth();
+  const getSupabase = useSupabaseClient(); // authenticated client factory
 
-  // Per-user cache keys so two accounts on the same browser never mix data
   const txCacheKey = userId ? `fx_tx_${userId}` : null;
   const budgetCacheKey = userId ? `fx_budget_${userId}` : null;
 
-  // Seed state from local cache immediately — UI is never blank on return visits
   const [transactions, setTransactions] = useState(() =>
     userId ? cacheGet(txCacheKey, []) : [],
   );
@@ -59,60 +52,7 @@ export function FinanceProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [financeReady, setFinanceReady] = useState(false);
 
-  // ─── Fetch from Supabase on mount / user change ────────────────────────
-
-  const fetchAll = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-
-    // Fetch transactions
-    const { data: txData, error: txErr } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('clerk_user_id', userId)
-      .order('date', { ascending: false });
-
-    if (!txErr && txData) {
-      const mapped = txData.map(mapFromDb);
-      setTransactions(mapped);
-      cacheSet(txCacheKey, mapped);
-    }
-
-    // Fetch budget
-    const { data: budgetData, error: budgetErr } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('clerk_user_id', userId)
-      .maybeSingle();
-
-    if (!budgetErr && budgetData) {
-      const b = { monthlyBudget: budgetData.monthly_budget ?? 0 };
-      setBudgetState(b);
-      cacheSet(budgetCacheKey, b);
-    }
-
-    setLoading(false);
-    setFinanceReady(true);
-  }, [userId, txCacheKey, budgetCacheKey]);
-
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    if (!userId) {
-      // User signed out — wipe everything
-      setTransactions([]);
-      setBudgetState({ monthlyBudget: 0 });
-      setLoading(false);
-      setFinanceReady(false);
-      return;
-    }
-
-    fetchAll();
-  }, [isLoaded, userId, fetchAll]);
-
-  // ─── Shape converters ────────────────────────────────────────────────────
-
-  // Supabase row (snake_case) → app transaction object (camelCase)
+  // ─── Shape converters ────────────────────────────────────
   const mapFromDb = (row) => ({
     id: row.id,
     title: row.title,
@@ -124,10 +64,12 @@ export function FinanceProvider({ children }) {
     recurring: row.recurring ?? false,
   });
 
-  // App transaction object → Supabase insert/update shape
+  // With RLS ON — no need to include clerk_user_id in inserts/updates
+  // The policy enforces ownership server-side.
+  // We still include it so the column constraint is satisfied on INSERT.
   const mapToDb = (tx) => ({
     id: tx.id,
-    clerk_user_id: userId,
+    clerk_user_id: userId, // required for the RLS policy match
     title: tx.title,
     amount: tx.amount,
     category: tx.category,
@@ -137,26 +79,81 @@ export function FinanceProvider({ children }) {
     recurring: tx.recurring ?? false,
   });
 
-  // ─── CRUD — optimistic updates + Supabase sync ───────────────────────────
+  // ─── Fetch all data for this user ────────────────────────
+  const fetchAll = useCallback(async () => {
+    if (!userId) return;
+    setLoading(true);
+
+    try {
+      // Get the authenticated client — this injects the Clerk JWT
+      const db = await getSupabase();
+
+      // RLS policy handles user scoping — no .eq('clerk_user_id') needed
+      const { data: txData, error: txErr } = await db
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (!txErr && txData) {
+        const mapped = txData.map(mapFromDb);
+        setTransactions(mapped);
+        cacheSet(txCacheKey, mapped);
+      } else if (txErr) {
+        console.error('fetchTransactions error:', txErr.message);
+      }
+
+      const { data: budgetData, error: budgetErr } = await db
+        .from('budgets')
+        .select('*')
+        .maybeSingle();
+
+      if (!budgetErr && budgetData) {
+        const b = { monthlyBudget: budgetData.monthly_budget ?? 0 };
+        setBudgetState(b);
+        cacheSet(budgetCacheKey, b);
+      } else if (budgetErr) {
+        console.error('fetchBudget error:', budgetErr.message);
+      }
+    } catch (err) {
+      console.error('fetchAll error:', err.message);
+    }
+
+    setLoading(false);
+    setFinanceReady(true);
+  }, [userId, txCacheKey, budgetCacheKey, getSupabase]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!userId) {
+      setTransactions([]);
+      setBudgetState({ monthlyBudget: 0 });
+      setLoading(false);
+      setFinanceReady(false);
+      return;
+    }
+
+    fetchAll();
+  }, [isLoaded, userId, fetchAll]);
+
+  // ─── CRUD — optimistic UI + Supabase sync ────────────────
 
   const addTransaction = async (tx) => {
     const newTx = { ...tx, id: uuidv4() };
 
-    // 1. Update UI immediately
+    // Optimistic update
     setTransactions((prev) => {
       const next = [newTx, ...prev];
       cacheSet(txCacheKey, next);
       return next;
     });
 
-    // 2. Sync to Supabase
-    const { error } = await supabase
-      .from('transactions')
-      .insert(mapToDb(newTx));
+    const db = await getSupabase();
+    const { error } = await db.from('transactions').insert(mapToDb(newTx));
 
     if (error) {
       console.error('addTransaction failed:', error.message);
-      // Rollback optimistic update
+      // Rollback
       setTransactions((prev) => {
         const next = prev.filter((t) => t.id !== newTx.id);
         cacheSet(txCacheKey, next);
@@ -168,7 +165,7 @@ export function FinanceProvider({ children }) {
   const deleteTransaction = async (id) => {
     let removed;
 
-    // 1. Remove from UI immediately
+    // Optimistic update
     setTransactions((prev) => {
       removed = prev.find((t) => t.id === id);
       const next = prev.filter((t) => t.id !== id);
@@ -176,12 +173,9 @@ export function FinanceProvider({ children }) {
       return next;
     });
 
-    // 2. Delete from Supabase
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', id)
-      .eq('clerk_user_id', userId);
+    const db = await getSupabase();
+    // RLS ensures only the owner can delete — no extra .eq('clerk_user_id') needed
+    const { error } = await db.from('transactions').delete().eq('id', id);
 
     if (error) {
       console.error('deleteTransaction failed:', error.message);
@@ -201,7 +195,7 @@ export function FinanceProvider({ children }) {
   const updateTransaction = async (id, updated) => {
     let previous;
 
-    // 1. Update UI immediately
+    // Optimistic update
     setTransactions((prev) => {
       previous = prev.find((t) => t.id === id);
       const next = prev.map((t) => (t.id === id ? { ...t, ...updated } : t));
@@ -209,13 +203,12 @@ export function FinanceProvider({ children }) {
       return next;
     });
 
-    // 2. Sync to Supabase
     const merged = { ...previous, ...updated };
-    const { error } = await supabase
+    const db = await getSupabase();
+    const { error } = await db
       .from('transactions')
       .update(mapToDb(merged))
-      .eq('id', id)
-      .eq('clerk_user_id', userId);
+      .eq('id', id);
 
     if (error) {
       console.error('updateTransaction failed:', error.message);
@@ -230,21 +223,17 @@ export function FinanceProvider({ children }) {
     }
   };
 
-  // ─── Budget — upsert ─────────────────────────────────────────────────────
-
+  // ─── Budget upsert ────────────────────────────────────────
   const setBudget = async (value) => {
-    // Accept both: setBudget(50000) and setBudget({ monthlyBudget: 50000 })
     const amount =
       typeof value === 'number' ? value : (value?.monthlyBudget ?? 0);
 
     const next = { monthlyBudget: amount };
-
-    // 1. Update UI immediately
     setBudgetState(next);
     cacheSet(budgetCacheKey, next);
 
-    // 2. Upsert in Supabase (creates row on first set, updates on subsequent)
-    const { error } = await supabase.from('budgets').upsert(
+    const db = await getSupabase();
+    const { error } = await db.from('budgets').upsert(
       {
         clerk_user_id: userId,
         monthly_budget: amount,
@@ -258,8 +247,7 @@ export function FinanceProvider({ children }) {
     }
   };
 
-  // ─── Derived values (computed on every render from live transactions) ─────
-
+  // ─── Derived values ───────────────────────────────────────
   const totalIncome = transactions
     .filter((t) => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -309,8 +297,7 @@ export function FinanceProvider({ children }) {
     })
     .reverse();
 
-  // ─── Context value ───────────────────────────────────────────────────────
-
+  // ─── Context value ────────────────────────────────────────
   const value = {
     transactions,
     addTransaction,
@@ -325,8 +312,8 @@ export function FinanceProvider({ children }) {
     budgetUsedPercent,
     transactionsByCategory,
     monthlyData,
-    loading, // true while initial Supabase fetch is in flight
-    financeReady, // true once first fetch has completed
+    loading,
+    financeReady,
   };
 
   return (
